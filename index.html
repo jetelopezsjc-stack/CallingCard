@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Calling Card</title>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    @property --ang {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg
+    }
+
+    :root {
+      --bg: #eceefb;
+      --glass: rgba(255, 255, 255, .9);
+      --solid: #fff;
+      --ink: #14163a;
+      --mute: #5b5f8c;
+      --line: rgba(20, 22, 58, .12);
+      --tile: rgba(20, 22, 58, .05);
+      --ab: .4;
+      --v: #7c5cff;
+      --c: #22d3ee;
+      --p: #ff6ba6;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      color-scheme: light
+    }
+
+    @media (prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #080920;
+        --glass: rgba(17, 19, 50, .88);
+        --solid: #12143a;
+        --ink: #eef0ff;
+        --mute: #9ea3d0;
+        --line: rgba(255, 255, 255, .12);
+        --tile: rgba(255, 255, 255, .06);
+        --ab: .55;
+        color-scheme: dark
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #080920;
+      --glass: rgba(17, 19, 50, .88);
+      --solid: #12143a;
+      --ink: #eef0ff;
+      --mute: #9ea3d0;
+      --line: rgba(255, 255, 255, .12);
+      --tile: rgba(255, 255, 255, .06);
+      --ab: .55;
+      color-scheme: dark
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      display: grid;
+      place-items: center;
+      padding: 28px 16px 44px;
+      overflow-x: hidden
+    }
+
+    .aurora {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0
+    }
+
+    .blob {
+      position: absolute;
+      width: 55vmax;
+      height: 55vmax;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: var(--ab);
+      animation: drift 16s ease-in-out infinite alternate
+    }
+
+    .b1 {
+      background: var(--v);
+      left: -18vmax;
+      top: -18vmax
+    }
+
+    .b2 {
+      background: var(--c);
+      right: -20vmax;
+      top: 25vh;
+      animation-duration: 20s;
+      animation-delay: -6s
+    }
+
+    .b3 {
+      background: var(--p);
+      left: 5vmax;
+      bottom: -26vmax;
+      animation-duration: 24s;
+      animation-delay: -12s
+    }
+
+    .stage {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      perspective: 1300px
+    }
+
+    .tilt {
+      transform-style: preserve-3d;
+      will-change: transform
+    }
+
+    .flipper {
+      display: grid;
+      transform-style: preserve-3d;
+      transition: transform .9s cubic-bezier(.3, 1.25, .4, 1)
+    }
+
+    .flipped .flipper {
+      transform: rotateY(180deg)
+    }
+
+    .face {
+      grid-area: 1/1;
+      position: relative;
+      background: var(--glass);
+      border-radius: 26px;
+      padding: 24px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      box-shadow: 0 30px 60px -30px rgba(10, 10, 40, .6)
+    }
+
+    .face::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1.5px;
+      background: conic-gradient(from var(--ang), var(--v), var(--c), var(--p), var(--v));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: spin 7s linear infinite;
+      pointer-events: none
+    }
+
+    .face::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, .14), transparent 60%);
+      opacity: var(--spot, 0);
+      transition: opacity .3s;
+      pointer-events: none
+    }
+
+    .back {
+      transform: rotateY(180deg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px
+    }
+
+    .avatar {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      padding: 3px;
+      background: conic-gradient(from var(--ang), var(--v), var(--c), var(--p), var(--v));
+      animation: spin 5s linear infinite;
+      flex: none
+    }
+
+    .avatar span {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--solid);
+      font: 800 22px Sora, sans-serif
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--tile);
+      border: 1px solid var(--line);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600
+    }
+
+    .status b {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2ee59d;
+      animation: pulse 2s infinite;
+      flex: none
+    }
+
+    h1 {
+      font: 800 34px/1.08 Sora, sans-serif;
+      margin: 0;
+      overflow-wrap: anywhere;
+      letter-spacing: -.01em
+    }
+
+    .roleline {
+      height: 30px;
+      overflow: hidden;
+      margin: 4px 0 16px;
+      font-weight: 600;
+      font-size: 17px;
+      background: linear-gradient(90deg, var(--v), var(--c));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      width: fit-content;
+      max-width: 100%
+    }
+
+    .rot {
+      display: inline-block;
+      transition: transform .3s cubic-bezier(.4, 0, .2, 1), opacity .3s
+    }
+
+    .rot.out {
+      transform: translateY(-70%);
+      opacity: 0
+    }
+
+    .rot.pre {
+      transition: none;
+      transform: translateY(70%);
+      opacity: 0
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px
+    }
+
+    .stat {
+      background: var(--tile);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px
+    }
+
+    .stat b {
+      display: block;
+      font: 800 24px/1.1 Sora, sans-serif
+    }
+
+    .stat small {
+      color: var(--mute);
+      font-size: 12px
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px
+    }
+
+    .chips span {
+      background: var(--tile);
+      border: 1px solid var(--line);
+      padding: 3px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: transform .2s, border-color .2s
+    }
+
+    .chips span:hover {
+      transform: translateY(-3px);
+      border-color: var(--v)
+    }
+
+    .links {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 18px
+    }
+
+    .links a {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      color: inherit;
+      text-decoration: none
+    }
+
+    .links a::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--v) 22%, transparent), transparent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .35s cubic-bezier(.2, .8, .2, 1)
+    }
+
+    .links a:hover::before,
+    .links a:focus-visible::before {
+      transform: scaleX(1)
+    }
+
+    .links small,
+    .links span {
+      position: relative
+    }
+
+    .links small {
+      color: var(--mute)
+    }
+
+    .links span {
+      font-weight: 600;
+      text-align: right;
+      overflow-wrap: anywhere;
+      min-width: 0;
+      transition: transform .25s
+    }
+
+    .links a:hover span,
+    .links a:focus-visible span {
+      transform: translateX(-4px)
+    }
+
+    .cta,
+    .ghost {
+      font: 700 15px "Plus Jakarta Sans", sans-serif;
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 18px;
+      cursor: pointer;
+      width: 100%;
+      transition: transform .15s, box-shadow .25s
+    }
+
+    .cta {
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      background: linear-gradient(135deg, #6d4aff, #d946ef);
+      box-shadow: 0 12px 26px -12px #7c5cff
+    }
+
+    .cta:hover {
+      box-shadow: 0 16px 30px -10px #7c5cff;
+      transform: translateY(-2px)
+    }
+
+    .cta:active,
+    .ghost:active {
+      transform: scale(.97)
+    }
+
+    .cta::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .45) 50%, transparent 70%);
+      transform: translateX(-120%);
+      animation: shine 3.4s ease-in-out 2.6s infinite
+    }
+
+    .ghost {
+      background: var(--tile);
+      color: var(--ink);
+      border: 1px solid var(--line)
+    }
+
+    h2 {
+      font: 800 22px Sora, sans-serif;
+      margin: 0
+    }
+
+    .qrwrap {
+      position: relative;
+      width: 236px;
+      padding: 13px
+    }
+
+    .qr {
+      width: 210px;
+      height: 210px;
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px;
+      position: relative;
+      overflow: hidden
+    }
+
+    .qr svg {
+      width: 100%;
+      height: 100%;
+      display: block
+    }
+
+    .qr::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 3px;
+      background: var(--v);
+      box-shadow: 0 0 14px 4px var(--v);
+      animation: scan 3.2s ease-in-out infinite
+    }
+
+    .qr.swap svg {
+      animation: qrin .45s cubic-bezier(.2, .8, .2, 1)
+    }
+
+    .cn {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--v);
+      animation: brk 2.4s ease-in-out infinite
+    }
+
+    .tl {
+      top: 0;
+      left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      border-radius: 10px 0 0 0
+    }
+
+    .tr {
+      top: 0;
+      right: 0;
+      border-left: 0;
+      border-bottom: 0;
+      border-radius: 0 10px 0 0
+    }
+
+    .bl {
+      bottom: 0;
+      left: 0;
+      border-right: 0;
+      border-top: 0;
+      border-radius: 0 0 0 10px
+    }
+
+    .br {
+      bottom: 0;
+      right: 0;
+      border-left: 0;
+      border-top: 0;
+      border-radius: 0 0 10px 0
+    }
+
+    .seg {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      width: 100%;
+      background: var(--tile);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px
+    }
+
+    .seg button {
+      position: relative;
+      z-index: 1;
+      background: none;
+      border: 0;
+      color: var(--ink);
+      font: 600 13px "Plus Jakarta Sans", sans-serif;
+      padding: 8px 4px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: color .3s
+    }
+
+    .seg button[aria-pressed="true"] {
+      color: #fff
+    }
+
+    .pill {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 4px;
+      width: calc((100% - 8px)/3);
+      border-radius: 999px;
+      background: linear-gradient(135deg, #6d4aff, #d946ef);
+      transition: transform .45s cubic-bezier(.3, 1.3, .5, 1)
+    }
+
+    .seg[data-i="1"] .pill {
+      transform: translateX(100%)
+    }
+
+    .seg[data-i="2"] .pill {
+      transform: translateX(200%)
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--c);
+      outline-offset: 2px
+    }
+
+    body.intro .stage {
+      animation: enter 1s cubic-bezier(.2, .8, .2, 1) both
+    }
+
+    body.intro .s {
+      opacity: 0;
+      animation: up .6s cubic-bezier(.2, .8, .2, 1) forwards;
+      animation-delay: calc(.45s + var(--i, 0)*.05s)
+    }
+
+    @keyframes enter {
+      from {
+        opacity: 0;
+        transform: translateY(46px) scale(.94);
+        filter: blur(12px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+        filter: none
+      }
+    }
+
+    @keyframes up {
+      from {
+        opacity: 0;
+        transform: translateY(14px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    @keyframes spin {
+      to {
+        --ang: 360deg
+      }
+    }
+
+    @keyframes drift {
+      to {
+        transform: translate(8vmax, -6vmax) scale(1.18)
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 #2ee59d
+      }
+
+      70% {
+        box-shadow: 0 0 0 8px transparent
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 transparent
+      }
+    }
+
+    @keyframes shine {
+
+      0%,
+      55% {
+        transform: translateX(-120%)
+      }
+
+      100% {
+        transform: translateX(120%)
+      }
+    }
+
+    @keyframes scan {
+
+      0%,
+      100% {
+        top: 0;
+        opacity: 0
+      }
+
+      12%,
+      88% {
+        opacity: .95
+      }
+
+      50% {
+        top: calc(100% - 3px)
+      }
+    }
+
+    @keyframes brk {
+      50% {
+        transform: scale(.88)
+      }
+    }
+
+    @keyframes qrin {
+      from {
+        opacity: 0;
+        transform: scale(.85) rotate(-4deg)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important
+      }
+
+      body.intro .s {
+        opacity: 1
+      }
+
+      .qr::after {
+        display: none
+      }
+    }
+  </style>
+</head>
+
+<body class="intro">
+  <div class="aurora" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
+  <main class="stage" id="stage">
+    <div class="tilt" id="tilt">
+      <div class="flipper">
+        <section class="face front" id="front" aria-label="Calling card">
+          <div class="top s">
+            <div class="avatar"><span id="ini"></span></div><span class="status"><b></b><span
+                id="outStatus"></span></span>
+          </div>
+          <h1 class="s" id="outName"></h1>
+          <div class="roleline s"><span class="rot" id="rot"></span></div>
+          <div class="stats" id="stats"></div>
+          <div class="chips" id="chips"></div>
+          <nav class="links" id="links" aria-label="Contact links"></nav>
+          <button class="cta s" id="flipBtn" type="button">Show QR code</button>
+        </section>
+        <section class="face back" id="back" aria-label="QR code">
+          <h2>Scan to connect</h2>
+          <div class="qrwrap">
+            <div class="qr" id="qrbox" role="img" aria-label="QR code"></div><i class="cn tl"></i><i
+              class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i>
+          </div>
+          <div class="seg" id="seg" data-i="0" role="group" aria-label="QR code content">
+            <span class="pill"></span>
+            <button type="button" data-m="contact" aria-pressed="true">Contact</button>
+            <button type="button" data-m="li" aria-pressed="false">LinkedIn</button>
+          </div>
+          <button class="ghost" id="backBtn" type="button">Back to card</button>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script>
+    // ===== Your details: change the text between the quotes =====
+    var CARD = {
+      name: "Jessica T. Lopez",
+      roles: ["IT Student", "Infrastructure", "Network Enthusiast", "Future Security Analyst"],
+      status: "Open to Opp",
+      stats: [{ label: "Projects", value: 12, suffix: "+" }, { label: "Certs", value: 3, suffix: "" }, { label: "Skills", value: 8, suffix: "+" }],
+      skills: ["Networking", "Linux", "Python", "SQL", "Cloud", "Git"],
+      phone: "+63 992 205 4611",
+      email: "jessa08lopez@gmail.com",
+      linkedin: "https://www.linkedin.com/in/jessicatemillarlopez",
+      github: "https://github.com/jessa08lopez-jpg"
+    };
+    // =============================================================
+
+    (function () {
+      var mode = "contact", flipped = false;
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      function $(id) { return document.getElementById(id) }
+      function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] }) }
+      function vc(s) { return s.replace(/([,;\\])/g, "\\$1") }
+
+      $("outName").textContent = CARD.name;
+      $("outStatus").textContent = CARD.status;
+      $("ini").textContent = CARD.name.split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0].toUpperCase() }).join("");
+      $("stats").innerHTML = CARD.stats.map(function (s) { return '<div class="stat s"><b data-to="' + s.value + '" data-sfx="' + esc(s.suffix) + '">0' + esc(s.suffix) + '</b><small>' + esc(s.label) + '</small></div>' }).join("");
+      $("chips").innerHTML = CARD.skills.map(function (x) { return '<span class="s">' + esc(x) + '</span>' }).join("");
+      var rows = [
+        ["Call", "tel:" + CARD.phone.replace(/[^+\d]/g, ""), CARD.phone],
+        ["Email", "mailto:" + CARD.email, CARD.email],
+        ["LinkedIn", CARD.linkedin, CARD.linkedin.replace(/^https?:\/\/(www\.)?/i, "")],
+        ["GitHub", CARD.github, CARD.github.replace(/^https?:\/\/(www\.)?/i, "")]
+      ];
+      $("links").innerHTML = rows.map(function (r) {
+        var x = /^https?:/.test(r[1]) ? ' target="_blank" rel="noopener noreferrer"' : '';
+        return '<a class="s" href="' + esc(r[1]) + '"' + x + '><small>' + r[0] + '</small><span>' + esc(r[2]) + '</span></a>';
+      }).join("");
+      Array.prototype.forEach.call(document.querySelectorAll("#front .s"), function (e, i) { e.style.setProperty("--i", i) });
+
+      // count-up stats
+      Array.prototype.forEach.call(document.querySelectorAll("[data-to]"), function (el) {
+        var to = +el.getAttribute("data-to"), sfx = el.getAttribute("data-sfx") || "";
+        if (reduced) { el.textContent = to + sfx; return }
+        setTimeout(function () { var t0; (function f(ts) { if (!t0) t0 = ts; var p = Math.min(1, (ts - t0) / 1300), e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(to * e) + sfx; if (p < 1) requestAnimationFrame(f) })(performance.now()) }, 900);
+      });
+
+      // role rotator
+      var rot = $("rot"), ri = 0; rot.textContent = CARD.roles[0];
+      if (!reduced && CARD.roles.length > 1) setInterval(function () {
+        rot.classList.add("out");
+        setTimeout(function () { ri = (ri + 1) % CARD.roles.length; rot.textContent = CARD.roles[ri]; rot.classList.remove("out"); rot.classList.add("pre"); void rot.offsetWidth; rot.classList.remove("pre") }, 300);
+      }, 2800);
+
+      // 3D tilt + spotlight
+      var stage = $("stage"), tilt = $("tilt");
+      if (!reduced) {
+        stage.addEventListener("pointermove", function (e) {
+          var r = stage.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+          tilt.style.transition = "transform .12s ease-out";
+          tilt.style.transform = "rotateX(" + (-(y / r.height - .5) * 9) + "deg) rotateY(" + ((x / r.width - .5) * 11) + "deg)";
+          stage.style.setProperty("--mx", x + "px"); stage.style.setProperty("--my", y + "px"); stage.style.setProperty("--spot", 1);
+        });
+        stage.addEventListener("pointerleave", function () {
+          tilt.style.transition = "transform .8s cubic-bezier(.2,.9,.3,1.3)"; tilt.style.transform = ""; stage.style.setProperty("--spot", 0);
+        });
+      }
+
+      // QR
+      function payload() {
+        if (mode === "li") return CARD.linkedin;
+        var p = CARD.name.split(/\s+/), last = p.length > 1 ? p.pop() : "", first = p.join(" ");
+        return ["BEGIN:VCARD", "VERSION:3.0", "N:" + vc(last) + ";" + vc(first) + ";;;", "FN:" + vc(CARD.name), "TITLE:" + vc(CARD.roles[0]),
+          "TEL;TYPE=CELL:" + vc(CARD.phone), "EMAIL:" + vc(CARD.email),
+          "X-SOCIALPROFILE;TYPE=linkedin:" + CARD.linkedin, "X-SOCIALPROFILE;TYPE=github:" + CARD.github, "END:VCARD"].join("\n");
+      }
+      function drawQR() {
+        try {
+          var qr = qrcode(0, "M"); qr.addData(payload()); qr.make();
+          var n = qr.getModuleCount(), d = "";
+          for (var r = 0; r < n; r++)for (var c = 0; c < n; c++) if (qr.isDark(r, c)) d += "M" + c + " " + r + "h1v1h-1z";
+          $("qrbox").innerHTML = '<svg viewBox="0 0 ' + n + ' ' + n + '" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path d="' + d + '" fill="#0a0b24"/></svg>';
+        } catch (e) { $("qrbox").textContent = "Too long" }
+      }
+      var seg = $("seg"), btns = seg.querySelectorAll("button");
+      Array.prototype.forEach.call(btns, function (b, i) {
+        b.onclick = function () {
+          mode = b.getAttribute("data-m"); seg.setAttribute("data-i", i);
+          Array.prototype.forEach.call(btns, function (o) { o.setAttribute("aria-pressed", o === b) });
+          var q = $("qrbox"); q.classList.remove("swap"); void q.offsetWidth; q.classList.add("swap"); drawQR();
+        }
+      });
+
+      // flip
+      function setFlip(f) {
+        flipped = f; stage.classList.toggle("flipped", f);
+        $("front").inert = f; $("back").inert = !f;
+        setTimeout(function () { (f ? $("backBtn") : $("flipBtn")).focus({ preventScroll: true }) }, 60);
+      }
+      $("flipBtn").onclick = function () { setFlip(true) };
+      $("backBtn").onclick = function () { setFlip(false) };
+      $("back").inert = true;
+
+      setTimeout(function () { document.body.classList.remove("intro") }, 3200);
+      drawQR();
+    })();
+  </script>
+</body>
+
+</html>
